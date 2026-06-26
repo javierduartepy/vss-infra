@@ -4,3 +4,4 @@ venv/
 __pycache__/
 *.pyc
 .pytest_cache/
+vss_infra/env_vss/
