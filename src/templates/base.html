@@ -3,234 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Telemetría: VSS vs Snapshots</title>
+    <title>VSS ARCHITECTURE SIMULATOR</title>
     <style>
-        /* Estilos base con paleta mate y moderna */
-        body {
-            background-color: #0f172a;
-            color: #f3f4f6;
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            padding: 3rem 1rem;
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 1140px;
-            margin: 0 auto;
-        }
-        .text-center { text-align: center; }
-        .mb-4 { margin-bottom: 1.5rem; }
-        .mb-5 { margin-bottom: 3rem; }
-        .m-0 { margin: 0; }
-        .fw-bold { font-weight: 700; }
-        .display-5 { font-size: 2.5rem; line-height: 1.2; letter-spacing: -0.025em; }
-        .lead { font-size: 1.125rem; font-weight: 400; color: #9ca3af; }
+        /* Estilos base fijos e instantáneos sin frameworks de internet */
+        body { background: #14355a; font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .dashboard { background-color: #ceddf0; border: 3px solid #0f2b48; border-radius: 12px; padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .title { color: white; font-weight: bold; font-size: 24px; text-shadow: 2px 2px #0f2b48; text-align: center; margin-bottom: 15px; text-transform: uppercase; }
+        .layout-top { display: flex; gap: 20px; margin-bottom: 20px; }
+        .card-panel { background: white; border: 2px solid #0f2b48; border-radius: 8px; padding: 15px; }
+        .requester-panel { flex: 1; }
         
-        /* Alertas de Estado con degradados suaves y sofisticados */
-        .alert {
-            position: relative;
-            padding: 1.25rem;
-            margin-bottom: 2rem;
-            border-radius: 0.5rem;
-            font-size: 1.15rem;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .alert-secondary {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            color: #f3f4f6;
-            border-color: #334155;
-        }
-        .alert-danger {
-            background: linear-gradient(135deg, #451a03, #290800);
-            color: #f3f4f6;
-            border-color: #7f1d1d;
-        }
-        .alert-primary {
-            background: linear-gradient(135deg, #1e1b4b, #0c0a09);
-            color: #f3f4f6;
-            border-color: #312e81;
-        }
-
-        /* Grilla de Contenedores */
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-            margin-right: -0.75rem;
-            margin-left: -0.75rem;
-        }
-        .col {
-            flex: 1 0 0%;
-            padding-right: 0.75rem;
-            padding-left: 0.75rem;
-            box-sizing: border-box;
-            margin-bottom: 1rem;
-        }
-        @media (max-width: 768px) {
-            .row { flex-direction: column; }
-            .col { width: 100%; }
-        }
-
-        /* Contenedores de métricas con bordes sutiles y textos mate */
-        .card-custom {
-            background-color: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            color: #f3f4f6;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
+        /* Contenedor del gráfico de barras nativo ultra liviano */
+        .graph-panel { flex: 2; display: flex; flex-direction: column; justify-content: space-between; }
+        .bar-container { background: #e9ecef; border: 1px solid #ced4da; height: 35px; border-radius: 6px; overflow: hidden; display: flex; align-items: center; position: relative; }
+        .bar-fill { height: 100%; width: 0%; background: #28a745; transition: width 0.2s ease-in-out, background-color 0.2s ease-in-out; }
+        .bar-text { position: absolute; width: 100%; text-align: center; font-weight: bold; font-family: monospace; font-size: 14px; color: #000; }
         
-        /* Contenedores específicos adaptados para el degradado solicitado */
-        .card-vss {
-            background: linear-gradient(135deg, #3f1a1a, #1a0a0a);
-            border: 1px solid #7f1d1d;
-        }
-        .card-snapshot {
-            background: linear-gradient(135deg, #1e295d, #0f172a);
-            border: 1px solid #2563eb;
-        }
-
-        .fs-6 { font-size: 0.85rem; letter-spacing: 0.05em; font-weight: 600; }
-        .text-uppercase { text-transform: uppercase; }
-        .display-6 { font-size: 2.25rem; line-height: 1.2; margin-top: 0.5rem; color: #f3f4f6; }
-        
-        /* Panel de control y Botones unificados con el estilo del contenedor */
-        .d-flex { display: flex; }
-        .gap-3 { gap: 1rem; }
-        @media (max-width: 576px) {
-            .d-flex { flex-direction: column; }
-        }
-        .btn {
-            display: inline-block;
-            font-weight: 600;
-            line-height: 1.5;
-            text-align: center;
-            vertical-align: middle;
-            cursor: pointer;
-            user-select: none;
-            padding: 0.75rem 1.5rem;
-            font-size: 1.1rem;
-            border-radius: 0.5rem;
-            color: #f3f4f6;
-            transition: all 0.2s ease-in-out;
-        }
-        
-        /* Botones acoplados exactamente al diseño de los contenedores */
-        .btn-danger { 
-            background: linear-gradient(135deg, #4c1d1d, #2d0f0f); 
-            border: 1px solid #991b1b; 
-        }
-        .btn-danger:hover { 
-            background: linear-gradient(135deg, #7f1d1d, #451a03);
-            border-color: #ef4444; 
-        }
-        
-        .btn-primary { 
-            background: linear-gradient(135deg, #1e295d, #0f172a); 
-            border: 1px solid #2563eb; 
-        }
-        .btn-primary:hover { 
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            border-color: #60a5fa; 
-        }
-        
-        .btn-secondary { 
-            background-color: #334155; 
-            border: 1px solid #475569; 
-        }
-        .btn-secondary:hover { 
-            background-color: #475569; 
-            border-color: #9ca3af; 
-        }
+        .grid-3col { display: flex; gap: 20px; }
+        .col-card { flex: 1; background: #eef4fa; border: 2px solid #8ba4c2; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+        .c-header { padding: 10px; font-weight: bold; color: white; font-size: 13px; }
+        .h-vol { background-color: #7da5d1; }
+        .h-dat { background-color: #6189b3; }
+        .h-snap { background-color: #4b6e94; }
+        .table-wrap { padding: 10px; background: white; flex-grow: 1; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { background: #d1dbe5; border: 1px solid #9fb3c7; padding: 6px; text-align: left; }
+        td { border: 1px solid #cedbe7; padding: 6px; background: #fff; }
+        .freeze-active td { background-color: #fddddd !important; color: #a94442; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header class="text-center mb-5">
-            <h1 class="display-5 fw-bold">Telemetría de Infraestructura en Tiempo Real</h1>
-            <p class="lead">Evidencia empírica de degradación de I/O (Microsoft VSS) vs Modernización por Bloques</p>
-        </header>
-
-        <!-- Banner de Estado -->
-        <div id="status-banner" class="alert alert-secondary text-center fw-bold" role="alert">
-            Estado de Infraestructura: <span id="backup-status">IDLE</span>
-        </div>
-
-        <!-- Grilla de Métricas -->
-        <div class="row mb-5">
-            <div class="col">
-                <div class="card-custom text-center">
-                    <h3 class="fs-6 text-uppercase text-muted-custom">Conexiones Activas</h3>
-                    <p id="metric-conn" class="display-6 fw-bold m-0">0</p>
+    <div class="title">Abstracción de Arquitectura y Ciclo de Vida de VSS</div>
+    <div class="dashboard">
+        <div class="layout-top">
+            <div class="card-panel requester-panel">
+                <div style="font-size: 11px; font-weight: bold; color: #4b6e94; margin-bottom: 5px;">1. SOLICITANTE (Requester: API COM)</div>
+                <button id="com-btn" onclick="invokeComSnapshotCall()" style="background: #5cb85c; color: white; border: 1px solid #4cae4c; padding: 10px; font-weight: bold; width: 100%; border-radius: 4px; cursor: pointer;">
+                    Invocación API COM -> vssvc.exe
+                </button>
+                <div id="vss-log" style="font-size: 11px; margin-top: 10px; font-family: monospace; color: #444; background: #f8f9fa; padding: 6px; border-radius: 4px; border: 1px solid #ddd; height: 40px; overflow-y: auto;">
+                    vssvc.exe en reposo.
                 </div>
             </div>
-            <div class="col">
-                <div class="card-custom text-center">
-                    <h3 class="fs-6 text-uppercase text-muted-custom">Escrituras Exitosas</h3>
-                    <p id="metric-success" class="display-6 fw-bold m-0">0</p>
+            <div class="card-panel graph-panel">
+                <div style="font-size: 11px; font-weight: bold; color: #333; margin-bottom: 6px;">
+                    2. MONITOR DE TRABAJO EN TIEMPO REAL (vssvc.exe)
                 </div>
-            </div>
-            <div class="col">
-                <div class="card-custom card-vss text-center">
-                    <h3 class="fs-6 text-uppercase text-muted-custom">Fallas / Timeouts</h3>
-                    <p id="metric-fail" class="display-6 fw-bold m-0">0</p>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card-custom card-snapshot text-center">
-                    <h3 class="fs-6 text-uppercase text-muted-custom">Latencia de Red / Motor</h3>
-                    <p id="metric-latency" class="display-6 fw-bold m-0">0.00 ms</p>
+                <!-- Gráfico nativo de rendimiento por hardware -->
+                <div class="bar-container">
+                    <div id="cpu-fill" class="bar-fill"></div>
+                    <div id="cpu-lbl" class="bar-text">0.0% CPU [IDLE]</div>
                 </div>
             </div>
         </div>
-
-        <!-- Panel de Control -->
-        <div class="card-custom p-4 text-center">
-            <h2 class="fs-4 fw-bold mb-4" style="font-size: 1.25rem;">Consola de Operaciones de Respaldo</h2>
-            <div class="d-flex justify-content-center gap-3">
-                <button onclick="triggerAction('VSS')" class="btn btn-danger">
-                    Ejecutar Respaldo VSS (Legacy)
-                </button>
-                <button onclick="triggerAction('SNAPSHOT')" class="btn btn-primary">
-                    Ejecutar Snapshot de Infraestructura (Cisco EVPN-VXLAN)
-                </button>
-                <button onclick="triggerAction('RESET')" class="btn btn-secondary">
-                    Resetear Métricas
-                </button>
+        <div class="grid-3col">
+            <div class="col-card">
+                <div class="c-header h-vol">📁 VOLÚMENES (TABLA_VOLUMENES)</div>
+                <div class="table-wrap"><table><thead><tr><th>id</th><th>unidad</th><th>sistema</th><th>capacidad</th><th>health</th></tr></thead><tbody id="tb-vol"></tbody></table></div>
+            </div>
+            <div class="col-card">
+                <div class="c-header h-dat">📊 ESCRITORES / APLICACIÓN (TABLA_DATOS)</div>
+                <div class="table-wrap"><table><thead><tr><th>id</th><th>vol</th><th>ruta_archivo</th><th>contenido_bloque</th><th>modificacion</th></tr></thead><tbody id="tb-dat"></tbody></table></div>
+            </div>
+            <div class="col-card">
+                <div class="c-header h-snap">📷 PROVEEDORES / SHADOW COPIES (TABLA_SNAPSHOTS)</div>
+                <div class="table-wrap"><table><thead><tr><th>id</th><th>id_dato</th><th>vss_provider_usado</th><th>contenido_congelado</th><th>fecha_captura</th></tr></thead><tbody id="tb-snap"></tbody></table></div>
             </div>
         </div>
     </div>
-
     <script>
-        function triggerAction(actionName) {
-            fetch('/api/action', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ action: actionName })
-            });
-        }
-
-        setInterval(() => {
-            fetch('/api/metrics')
+        function fetchLifecycleData() {
+            fetch('/api/get_vss_telemetry')
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById('backup-status').innerText = data.backup_status;
-                    document.getElementById('metric-conn').innerText = data.active_connections;
-                    document.getElementById('metric-success').innerText = data.successful_writes;
-                    document.getElementById('metric-fail').innerText = data.failed_writes;
-                    document.getElementById('metric-latency').innerText = data.avg_latency_ms.toFixed(2) + " ms";
+                    // 1. Renderizar el medidor de rendimiento nativo en CSS puro
+                    const cpuVal = data.telemetry.cpu;
+                    const status = data.telemetry.status;
+                    const fill = document.getElementById('cpu-fill');
+                    const lbl = document.getElementById('cpu-lbl');
+                    
+                    fill.style.width = cpuVal + '%';
+                    lbl.innerText = cpuVal + "% CPU [" + status + "]";
+                    
+                    // Cambiar colores dinámicos del medidor según el momento exacto de la simulación
+                    if (status === "FREEZE") { fill.style.backgroundColor = "#d9534f"; }
+                    else if (status === "SNAPSHOT") { fill.style.backgroundColor = "#f0ad4e"; }
+                    else { fill.style.backgroundColor = "#28a745"; }
 
-                    const banner = document.getElementById('status-banner');
-                    if(data.backup_status.includes('🛑')) {
-                        banner.className = "alert alert-danger text-center fw-bold";
-                    } else if(data.backup_status.includes('⚡')) {
-                        banner.className = "alert alert-primary text-center fw-bold";
-                    } else {
-                        banner.className = "alert alert-secondary text-center fw-bold";
-                    }
+                    document.getElementById('vss-log').innerText = data.telemetry.message;
+                    document.getElementById('com-btn').disabled = status !== "IDLE";
+                    
+                    // 2. Volcar información en las grillas
+                    document.getElementById('tb-vol').innerHTML = data.volumenes.map(v => `<tr><td><b>${v.id_volumen}</b></td><td>${v.letra_unidad}</td><td>${v.sistema_archivos}</td><td>${v.capacidad_total_gb}</td><td style="color:green;font-weight:bold;">${v.health}</td></tr>`).join('');
+                    
+                    const tDatBody = document.getElementById('tb-dat');
+                    tDatBody.className = status === "FREEZE" ? "freeze-active" : "";
+                    tDatBody.innerHTML = data.datos.map(d => `<tr><td><b>${d.id_dato}</b></td><td>${d.id_volumen}</td><td>${d.ruta_archivo}</td><td>${d.contenido_bloque}</td><td>${d.ultima_modificacion}</td></tr>`).join('');
+                    
+                    document.getElementById('tb-snap').innerHTML = data.snapshots.map(s => `<tr><td><b>${s.id_snapshot}</b></td><td>${s.id_dato}</td><td>${s.vss_provider_usado}</td><td>${s.contenido_congelado}</td><td>${s.fecha_captura}</td></tr>`).join('');
                 });
-        }, 500);
+        }
+        function invokeComSnapshotCall() {
+            fetch('/api/com_trigger_snapshot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id_dato: 101 }) });
+        }
+        // Frecuencia optimizada para una respuesta inmediata de las vistas
+        setInterval(fetchLifecycleData, 300);
+        window.onload = fetchLifecycleData;
     </script>
 </body>
 </html>
